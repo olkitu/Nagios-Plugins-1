@@ -11,10 +11,22 @@ function usage() {
         echo "MAX_OLD_DAYS:     The script will trigger a critical alert if the backup is older then the days specified in this var."
         echo
         echo "The user nagios executes the pvesm binary via sudo. For this to work you have to modify your /etc/sudoers. E.g:"
-        echo "  'nagios ALL=NOPASSWD: /usr/sbin/pvesm list *, /usr/bin/pvectl list *, /usr/bin/lxc-ls, /usr/sbin/qm list *'"
+        echo "nagios  ALL=(ALL) NOPASSWD: /usr/sbin/pvesm, /usr/bin/pvectl, /usr/bin/lxc-ls, /usr/sbin/qm"
         echo
         exit 1
 }
+
+while true ; do
+  getopts 's:i:d:h' OPT
+  if [ "$OPT" = '?' ] ; then break; fi;
+  case "$OPT" in
+    "s") BACKUP_STORAGE="$OPTARG";; #Name of your proxmox backup storage
+    "i") ID="$OPTARG";; # vmid of the vm you want to check
+    "d") MAX_OLD_DAYS="$OPTARG";;  #The script triggers an critical alert if the last backup is older than $MAX_OLD_DAYS days
+    "h") usage; exit 1;;
+  esac
+done
+
 
 if [[ -z $1 || -z $2 || -z $3 ]]; then
         usage
@@ -28,15 +40,6 @@ QM="sudo /usr/sbin/qm"
 
 # Temp file for pvesm output
 LIST=/tmp/pvesmlist
-
-# Name of your proxmox backup storage
-BACKUP_STORAGE=$1
-
-# vmid of the vm you want to check
-ID=$2
-
-# The script triggers an critical alert if the last backup is older than $MAX_OLD_DAYS days
-MAX_OLD_DAYS=$3
 
 # Check that vmid has at least 3 digits
 len=$(echo ${#ID})
